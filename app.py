@@ -22,12 +22,10 @@ if "locations_list" not in st.session_state:
 
 
 def city_selector():
+    selected_city = ""
+    locations_list = st.session_state.locations_list  # get_locations_list()
     while True:
-        results = []
-        selected_city = ""
-        results.append("")
-        results.append("Add new location")
-        locations_list = st.session_state.locations_list  # get_locations_list()
+        results = ["", "Add new location"]
         for item in locations_list:
             if f"{item['city']}, {item['state']}" not in results:
                 results.append(f"{item['city']}, {item['state']}")
@@ -166,7 +164,7 @@ def main():
         # response = drop_list(random.randint(1, 100))
         # st.experimental_rerun()
     else:
-        while response != "Add new location" and response != "":
+        while response not in ["Add new location", ""]:
             user_choice = response.split(",", 1)[0]
 
             for item in locations_list:
