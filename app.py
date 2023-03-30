@@ -49,37 +49,42 @@ def city_select_droplist(city, state):
 
 def add_location():
     with st.sidebar.form(key="new_location_form", clear_on_submit=True):
-        address = st.text_input("Enter in the street address:", "Address ...")
+        # address = st.text_input("Enter in the street address:", "Address ...")
         city = st.text_input("Enter in the city:", "City ...")
         state = st.text_input(
             "Enter in the two character state code:", "State Code ex. NY ..."
         )
-        zip = st.text_input("Enter in the zip code:", "Zip Code ...")
+        # zip = st.text_input("Enter in the zip code:", "Zip Code ...")
+
+        responses = {"city": city, "state": state}
+
+        geo_json = {}
+        geo_coding_url = (
+            f"https://nominatim.openstreetmap.org/search?q={city}%20{state}&format=json"
+        )
+
         add_location_button = st.form_submit_button(label="Add Location")
+        if add_location_button:
+            try:
+                geo_json = requests.get(geo_coding_url)
+                geo_json.raise_for_status()
+                geo_json = geo_json.json()
+                geo_lon_coordinate = geo_json[0]["lon"]
+                geo_lat_coordinate = geo_json[0]["lat"]
 
-    responses = {"address": address, "city": city, "state": state, "zip": zip}
-
-    geo_json = {}
-    geo_coding_url = f"https://geocoding.geo.census.gov/geocoder/locations/address?street={address}&city={city}&state={state}&benchmark=2020&format=json"
-    geo_json = requests.get(geo_coding_url)
-
-    try:
-        geo_json.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        return "Error: " + str(e)
-    geo_json = geo_json.json()
-    geo_lon_coordinate = geo_json["result"]["addressMatches"][0]["coordinates"]["x"]
-    geo_lat_coordinate = geo_json["result"]["addressMatches"][0]["coordinates"]["y"]
-
-    responses.update({"lon": str(geo_lon_coordinate), "lat": str(geo_lat_coordinate)})
-    # locations_list = get_locations_list()
-    locations_list.append(responses)
-    st.session_state.locations_list.append(responses)
-    with open("locations.json", "w") as file:
-        file.write(json.dumps(locations_list, indent=2))
-    city_select_droplist(city, state)
-    st.experimental_rerun()
-    # return f"{city}"
+                responses.update(
+                    {"lon": str(geo_lon_coordinate), "lat": str(geo_lat_coordinate)}
+                )
+                # locations_list = get_locations_list()
+                locations_list.append(responses)
+                st.session_state.locations_list.append(responses)
+                with open("locations.json", "w") as file:
+                    file.write(json.dumps(locations_list, indent=2))
+                city_select_droplist(city, state)
+                st.experimental_rerun()
+                # return f"{city}"
+            except requests.exceptions.HTTPError as e:
+                return "Error: " + str(e)
 
 
 def get_lon_lat(city, state):
@@ -169,10 +174,10 @@ def main():
 
             for item in locations_list:
                 if item["city"] == user_choice:
-                    address = item["address"]
+                    # address = item["address"]
                     city = item["city"]
                     state = item["state"]
-                    zip = item["zip"]
+                    # zip = item["zip"]
 
             get_weather(city, state)
             break
