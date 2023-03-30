@@ -1,12 +1,16 @@
 import streamlit as st
-from pprint import pprint
 import json
-import random
 import requests
+import os
 import time
 
 
-# @st.cache
+if not os.path.exists("locations.json"):
+    with open("locations.json", "w") as file:
+        data = []
+        json.dump(data, file)
+
+
 def get_locations_list():
     with open("locations.json", "r") as file:
         locations_list = json.load(file)
@@ -18,12 +22,11 @@ locations_list = get_locations_list()
 
 if "locations_list" not in st.session_state:
     st.session_state.locations_list = get_locations_list()
-# st.write(st.session_state.locations_list)
 
 
 def city_selector():
     selected_city = ""
-    locations_list = st.session_state.locations_list  # get_locations_list()
+    locations_list = st.session_state.locations_list
     while True:
         results = ["", "Add new location"]
         for item in locations_list:
@@ -36,26 +39,18 @@ def city_selector():
 
 if "city_list" not in st.session_state:
     st.session_state.city_list = city_selector()
-# st.write(st.session_state.city_list)
-
-
-# response = st.selectbox("Select your city:", city_selector(), key="city_state")
 
 
 def city_select_droplist(city, state):
     st.session_state.city_list.append(f"{city}, {state}")
-    # st.session_state[city] = state
 
 
 def add_location():
     with st.sidebar.form(key="new_location_form", clear_on_submit=True):
-        # address = st.text_input("Enter in the street address:", "Address ...")
         city = st.text_input("Enter in the city:", "City ...")
         state = st.text_input(
             "Enter in the two character state code:", "State Code ex. NY ..."
         )
-        # zip = st.text_input("Enter in the zip code:", "Zip Code ...")
-
         responses = {"city": city, "state": state}
 
         geo_json = {}
@@ -63,8 +58,7 @@ def add_location():
             f"https://nominatim.openstreetmap.org/search?q={city}%20{state}&format=json"
         )
 
-        add_location_button = st.form_submit_button(label="Add Location")
-        if add_location_button:
+        if add_location_button := st.form_submit_button(label="Add Location"):
             try:
                 geo_json = requests.get(geo_coding_url)
                 geo_json.raise_for_status()
@@ -75,28 +69,22 @@ def add_location():
                 responses.update(
                     {"lon": str(geo_lon_coordinate), "lat": str(geo_lat_coordinate)}
                 )
-                # locations_list = get_locations_list()
                 locations_list.append(responses)
                 st.session_state.locations_list.append(responses)
                 with open("locations.json", "w") as file:
                     file.write(json.dumps(locations_list, indent=2))
                 city_select_droplist(city, state)
                 st.experimental_rerun()
-                # return f"{city}"
             except requests.exceptions.HTTPError as e:
-                return "Error: " + str(e)
+                return f"Error: {str(e)}"
 
 
 def get_lon_lat(city, state):
-    coordinates = []
-    # locations_list = get_locations_list()
     for item in locations_list:
         if item["city"] == city and item["state"] == state:
             lon = item["lon"]
             lat = item["lat"]
-    coordinates.append(lat)
-    coordinates.append(lon)
-    return coordinates
+    return [lat, lon]
 
 
 def get_weather(city, state):
@@ -112,27 +100,16 @@ def get_weather(city, state):
     try:
         weather_points_json.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        return "Error: " + str(e)
+        return f"Error: {str(e)}"
     weather_points_json = weather_points_json.json()
 
     forecast_url = weather_points_json["properties"]["forecast"]
-    # forecast_hourly_url = weather_points_json["properties"]["forecastHourly"]
-
     forecast_json = requests.get(forecast_url)
     try:
         forecast_json.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        return "Error: " + str(e)
+        return f"Error: {str(e)}"
     forecast_json = forecast_json.json()
-
-    #  This section will be used for the hourly forecast
-    # forecast_hourly_json = requests.get(forecast_hourly_url)
-    # try:
-    #    forecast_hourly_json.raise_for_status()
-    # except requests.exceptions.HTTPError as e:
-    #    return "Error: " + str(e)
-    # forecast_hourly_json = forecast_hourly_json.json()
-
     forecast_days = forecast_json["properties"]["periods"]
 
     for day in forecast_days:
@@ -160,30 +137,23 @@ def main():
     st.title("7 Day Weather Forecast")
 
     start_time = time.time()
-    # locations_list = get_locations_list()
-
     response = drop_list()
     if response == "Add new location":
-        # user_choice = add_location()
         add_location()
-        # response = drop_list(random.randint(1, 100))
-        # st.experimental_rerun()
     else:
         while response not in ["Add new location", ""]:
             user_choice = response.split(",", 1)[0]
 
             for item in locations_list:
                 if item["city"] == user_choice:
-                    # address = item["address"]
                     city = item["city"]
                     state = item["state"]
-                    # zip = item["zip"]
 
             get_weather(city, state)
             break
 
     end_time = time.time()
-    st.markdown("Total time to run: " + str(end_time - start_time))
+    st.markdown(f"Total time to run: {str(end_time - start_time)}")
 
 
 if __name__ == "__main__":
