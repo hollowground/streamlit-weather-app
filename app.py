@@ -1,5 +1,7 @@
 import streamlit as st
 import json
+import pandas as pd
+import plotly.express as px
 import requests
 import os
 import time
@@ -87,6 +89,10 @@ def get_lon_lat(city, state):
     return [lat, lon]
 
 
+weather_list = []
+weather_dict = {}
+
+
 def get_weather(city, state):
 
     geo_coordinates = get_lon_lat(city, state)
@@ -127,6 +133,9 @@ def get_weather(city, state):
             + " "
             + day["detailedForecast"]
         )
+        weather_list.append(day["temperature"])
+        temp = {day["name"].capitalize(): day["temperature"]}
+        weather_dict.update(temp)
 
 
 def drop_list():
@@ -158,3 +167,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+    df = pd.DataFrame(list(weather_dict.items()), columns=['Day', 'Temperature'])
+    df.set_index('Day', inplace=True)                                                                   
+    #st.line_chart(df)
+    
+    fig = px.line(
+        df,
+        y = "Temperature",
+        title = "7 Day Forecast"
+    )
+    
+    st.plotly_chart(fig, theme="streamlit")
