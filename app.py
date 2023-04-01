@@ -7,6 +7,9 @@ import os
 import time
 
 
+with open("styles.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
 if not os.path.exists("locations.json"):
     with open("locations.json", "w") as file:
         data = []
@@ -47,38 +50,6 @@ def city_select_droplist(city, state):
     st.session_state.city_list.append(f"{city}, {state}")
 
 
-def add_location():
-    with st.sidebar.form(key="new_location_form", clear_on_submit=True):
-        city = st.text_input("Enter in the city:", "City ...")
-        state = st.text_input(
-            "Enter in the two character state code:", "State Code ex. NY ..."
-        )
-        responses = {"city": city, "state": state}
-
-        geo_json = {}
-        geo_coding_url = (
-            f"https://nominatim.openstreetmap.org/search?q={city}%20{state}&format=json"
-        )
-
-        if add_location_button := st.form_submit_button(label="Add Location"):
-            try:
-                geo_json = requests.get(geo_coding_url)
-                geo_json.raise_for_status()
-                geo_json = geo_json.json()
-                geo_lon_coordinate = geo_json[0]["lon"]
-                geo_lat_coordinate = geo_json[0]["lat"]
-
-                responses.update(
-                    {"lon": str(geo_lon_coordinate), "lat": str(geo_lat_coordinate)}
-                )
-                locations_list.append(responses)
-                st.session_state.locations_list.append(responses)
-                with open("locations.json", "w") as file:
-                    file.write(json.dumps(locations_list, indent=2))
-                city_select_droplist(city, state)
-                st.experimental_rerun()
-            except requests.exceptions.HTTPError as e:
-                return f"Error: {str(e)}"
 
 
 def get_lon_lat(city, state):
@@ -117,6 +88,30 @@ def get_weather(city, state):
         return f"Error: {str(e)}"
     forecast_json = forecast_json.json()
     forecast_days = forecast_json["properties"]["periods"]
+    
+    for metric in forecast_days:
+        weather_list.append(metric["temperature"])
+        temp = {metric["name"].capitalize(): metric["temperature"]}
+        weather_dict.update(temp)
+    df = pd.DataFrame(list(weather_dict.items()), columns=['Day', 'Temperature'])
+    df.set_index('Day', inplace=True)
+    #st.line_chart(df)
+
+    fig = px.line(
+        df,
+        y = "Temperature",
+        title = "7 Day Forecast"
+    )
+    col1, col2 = st.columns(2)
+
+    first_key, first_value = next(iter(weather_dict.items()))
+    iter_items = iter(weather_dict.items())
+    next(iter_items)
+    second_key, second_value = next(iter_items) 
+
+    col1.metric(first_key, value=f"{str(first_value)} °F")
+    col2.metric(second_key, value=f"{str(second_value)} °F")
+    st.plotly_chart(fig, theme="streamlit")        
 
     for day in forecast_days:
         st.markdown(
@@ -129,26 +124,61 @@ def get_weather(city, state):
             + " "
             + str(day["temperature"])
             + " "
-            + day["temperatureUnit"]
+            + "°F" #day["temperatureUnit"]
             + " "
             + day["detailedForecast"]
         )
-        weather_list.append(day["temperature"])
-        temp = {day["name"].capitalize(): day["temperature"]}
-        weather_dict.update(temp)
+
+
+def add_location():
+    with st.sidebar.form(key="new_location_form", clear_on_submit=True):
+        city = st.text_input("Enter in the city:", "City ...")
+        state = st.text_input(
+            "Enter in the two character state code:", "State Code ex. NY ..."
+        )
+        responses = {"city": city, "state": state}
+
+        geo_json = {}
+        geo_coding_url = (
+            f"https://nominatim.openstreetmap.org/search?q={city}%20{state}&format=json"
+        )
+        if add_location_button := st.form_submit_button(label="Add Location"):
+            try:
+                geo_json = requests.get(geo_coding_url)
+                geo_json.raise_for_status()
+                geo_json = geo_json.json()
+                geo_lon_coordinate = geo_json[0]["lon"]
+                geo_lat_coordinate = geo_json[0]["lat"]
+
+                responses.update(
+                    {"lon": str(geo_lon_coordinate), "lat": str(geo_lat_coordinate)}
+                )
+                locations_list.append(responses)
+                st.session_state.locations_list.append(responses)
+                with open("locations.json", "w") as file:
+                    file.write(json.dumps(locations_list, indent=2))
+                city_select_droplist(city, state)
+                st.experimental_rerun()         
+            except requests.exceptions.HTTPError as e:
+                return f"Error: {str(e)}"
+
+                
+                
+
 
 
 def drop_list():
-    return st.selectbox("Select your city:", city_selector())
+    return st.selectbox("Select or Add Your City:", city_selector())
 
 
 def main():
-    st.title("7 Day Weather Forecast")
+    st.title("7 Day Weather Forecast :sunglasses:")
 
     start_time = time.time()
     response = drop_list()
     if response == "Add new location":
         add_location()
+        #get_weather(add_loc_city, add_loc_state)
     else:
         while response not in ["Add new location", ""]:
             user_choice = response.split(",", 1)[0]
@@ -167,14 +197,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    df = pd.DataFrame(list(weather_dict.items()), columns=['Day', 'Temperature'])
-    df.set_index('Day', inplace=True)                                                                   
-    #st.line_chart(df)
-    
-    fig = px.line(
-        df,
-        y = "Temperature",
-        title = "7 Day Forecast"
-    )
-    
-    st.plotly_chart(fig, theme="streamlit")
