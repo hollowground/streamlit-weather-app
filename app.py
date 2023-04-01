@@ -105,7 +105,7 @@ def get_weather(city, state):
     )
     fig.update_traces(textposition="middle right")
     fig.update_layout(
-        title =  dict(text="7 Day Forecast", font=dict(size=25), y=0.9, x=0.5, xanchor="auto", yanchor="top")
+        title =  dict(text="7 Day Forecast", font=dict(size=25), y=0.95, x=0.5, xanchor="auto", yanchor="top")
     )
     col1, col2 = st.columns(2)
 
