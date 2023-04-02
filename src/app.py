@@ -1,5 +1,5 @@
 import streamlit as st
-from helpers import (
+from utils.helpers import (
     load_styles,
     check_locations_file_exists,
     city_selector,

@@ -6,24 +6,26 @@ import json
 import os
 import time
 
+
 @st.cache_data
 def load_styles():
     """Load the custom css styles for the app"""
-    with open("styles.css") as f:
+    with open("css/styles.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 def check_locations_file_exists():
     """Check if the locations file exists, if not create one"""
-    if not os.path.exists("locations.json"):
-        with open("locations.json", "w") as file:
+    if not os.path.exists("data/locations.json"):
+        with open("data/locations.json", "w") as file:
             data = []
             json.dump(data, file)
 
-@st.cache_data
+
+#@st.cache_data
 def get_locations_list():
     """Load the locations file for selecting the different weather locations"""
-    with open("locations.json", "r") as file:
+    with open("data/locations.json", "r") as file:
         locations_list = json.load(file)
     return locations_list
 
@@ -53,6 +55,7 @@ def get_lon_lat(city, state, locations_list):
             lon = item["lon"]
             lat = item["lat"]
     return [lat, lon]
+
 
 @st.cache_data
 def get_weather(city, state, locations_list):
@@ -157,7 +160,7 @@ def add_location():
                 )
                 locations_list.append(responses)
                 st.session_state.locations_list.append(responses)
-                with open("locations.json", "w") as file:
+                with open("data/locations.json", "w") as file:
                     file.write(json.dumps(locations_list, indent=2))
                 city_select_droplist(city, state)
                 st.experimental_rerun()
