@@ -1,5 +1,5 @@
 Steamlit for web
-to start streamlit: streamlit run nav.py
+to start streamlit: streamlit run .\src\app.py
 
 api for weather.gov
 https://www.weather.gov/documentation/services-web-api#/default/glossary
