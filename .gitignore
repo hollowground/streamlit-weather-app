@@ -141,4 +141,3 @@ cython_debug/
 # project files
 test.xml
 data/locations.json
-data/
