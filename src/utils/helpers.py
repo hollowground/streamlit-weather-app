@@ -22,7 +22,7 @@ def check_locations_file_exists():
             json.dump(data, file)
 
 
-#@st.cache_data
+# @st.cache_data
 def get_locations_list():
     """Load the locations file for selecting the different weather locations"""
     with open("data/locations.json", "r") as file:
@@ -57,7 +57,7 @@ def get_lon_lat(city, state, locations_list):
     return [lat, lon]
 
 
-@st.cache_data
+# @st.cache_data
 def get_weather(city, state, locations_list):
     """Will return the weather forecast based on the City, State from the locations list. Will also display metrics and chart from the forecast."""
     weather_list = []
