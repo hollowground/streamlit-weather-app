@@ -59,41 +59,54 @@ def get_lon_lat(city, state, locations_list):
     return [lat, lon]
 
 
-def get_weather(city, state, locations_list):
-    """Will return the weather forecast based on the City, State from the locations list. Will also display metrics and chart from the forecast."""
-    weather_list = []
-    weather_dict = {}
-    geo_coordinates = get_lon_lat(city, state, locations_list)
-    geo_lat_coordinate = geo_coordinates[0]
-    geo_lon_coordinate = geo_coordinates[1]
-    weather_gov_points_url = (
-        f"https://api.weather.gov/points/{geo_lat_coordinate},{geo_lon_coordinate}"
-    )
-    weather_points_json = requests.get(weather_gov_points_url)
-
+def fetch_weather_data(lat, lon):
+    """Fetch weather data from the API based on latitude and longitude."""
+    weather_gov_points_url = f"https://api.weather.gov/points/{lat},{lon}"
     try:
-        weather_points_json.raise_for_status()
+        response = requests.get(weather_gov_points_url)
+        response.raise_for_status()
+        return response.json()
     except requests.exceptions.HTTPError as e:
-        return f"Error: {str(e)}"
-    weather_points_json = weather_points_json.json()
+        st.error(f"Error fetching weather data: {str(e)}")
+        return None
 
-    forecast_url = weather_points_json["properties"]["forecast"]
-    forecast_json = requests.get(forecast_url)
+
+def fetch_forecast_data(forecast_url):
+    """Fetch forecast data from the API."""
     try:
-        forecast_json.raise_for_status()
+        response = requests.get(forecast_url)
+        response.raise_for_status()
+        return response.json()["properties"]["periods"]
     except requests.exceptions.HTTPError as e:
-        return f"Error: {str(e)}"
-    forecast_json = forecast_json.json()
-    forecast_days = forecast_json["properties"]["periods"]
+        st.error(f"Error fetching forecast data: {str(e)}")
+        return None
 
-    for metric in forecast_days:
-        weather_list.append(metric["temperature"])
-        temp = {metric["name"].capitalize(): metric["temperature"]}
-        weather_dict.update(temp)
+
+def process_weather_data(forecast_days):
+    """Process the raw forecast data and return a DataFrame."""
+    weather_dict = {
+        day["name"].capitalize(): day["temperature"] for day in forecast_days
+    }
     df = pd.DataFrame(list(weather_dict.items()), columns=["Day", "Temperature"])
     df.set_index("Day", inplace=True)
-    # st.line_chart(df)
+    return df
 
+
+def display_weather_metrics(weather_dict):
+    """Display weather metrics using Streamlit."""
+    col1, col2 = st.columns(2)
+
+    first_key, first_value = next(iter(weather_dict.items()))
+    iter_items = iter(weather_dict.items())
+    next(iter_items)
+    second_key, second_value = next(iter_items)
+
+    col1.metric(first_key, value=f"{str(first_value)} °F")
+    col2.metric(second_key, value=f"{str(second_value)} °F")
+
+
+def display_weather_chart(df):
+    """Display the weather chart using Plotly Express."""
     fig = px.line(df, y="Temperature", text="Temperature")
     fig.update_traces(textposition="middle right")
     fig.update_layout(
@@ -106,17 +119,11 @@ def get_weather(city, state, locations_list):
             yanchor="top",
         )
     )
-    col1, col2 = st.columns(2)
-
-    first_key, first_value = next(iter(weather_dict.items()))
-    iter_items = iter(weather_dict.items())
-    next(iter_items)
-    second_key, second_value = next(iter_items)
-
-    col1.metric(first_key, value=f"{str(first_value)} °F")
-    col2.metric(second_key, value=f"{str(second_value)} °F")
     st.plotly_chart(fig, theme="streamlit")
 
+
+def display_detailed_forecast(forecast_days, city, state):
+    """Display detailed forecast information."""
     for day in forecast_days:
         st.markdown(
             ":palm_tree: "
@@ -132,6 +139,30 @@ def get_weather(city, state, locations_list):
             + " "
             + day["detailedForecast"]
         )
+
+
+def get_weather(city, state, locations_list):
+    """Get weather forecast based on the City, State from the locations list."""
+    geo_coordinates = get_lon_lat(city, state, locations_list)
+    geo_lat_coordinate, geo_lon_coordinate = geo_coordinates
+
+    weather_data = fetch_weather_data(geo_lat_coordinate, geo_lon_coordinate)
+    if weather_data is None:
+        return
+
+    forecast_url = weather_data["properties"]["forecast"]
+    forecast_days = fetch_forecast_data(forecast_url)
+    if forecast_days is None:
+        return
+
+    weather_dict = {
+        day["name"].capitalize(): day["temperature"] for day in forecast_days
+    }
+    df = process_weather_data(forecast_days)
+
+    display_weather_metrics(weather_dict)
+    display_weather_chart(df)
+    display_detailed_forecast(forecast_days, city, state)
 
 
 def add_location():
