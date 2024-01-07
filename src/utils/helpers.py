@@ -8,6 +8,7 @@ import time
 
 CSS_FILE_PATH = "css/styles.css"
 LOCATIONS_FILE_PATH = "data/locations.json"
+REQUEST_TIMEOUT = 10
 
 
 @st.cache_data
@@ -63,7 +64,7 @@ def fetch_weather_data(lat, lon):
     """Fetch weather data from the API based on latitude and longitude."""
     weather_gov_points_url = f"https://api.weather.gov/points/{lat},{lon}"
     try:
-        response = requests.get(weather_gov_points_url)
+        response = requests.get(weather_gov_points_url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as e:
@@ -74,7 +75,7 @@ def fetch_weather_data(lat, lon):
 def fetch_forecast_data(forecast_url):
     """Fetch forecast data from the API."""
     try:
-        response = requests.get(forecast_url)
+        response = requests.get(forecast_url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()["properties"]["periods"]
     except requests.exceptions.HTTPError as e:
@@ -181,7 +182,7 @@ def add_location():
         )
         if add_location_button := st.form_submit_button(label="Add Location"):
             try:
-                geo_json = requests.get(geo_coding_url)
+                geo_json = requests.get(geo_coding_url, timeout=REQUEST_TIMEOUT)
                 geo_json.raise_for_status()
                 geo_json = geo_json.json()
                 geo_lon_coordinate = geo_json[0]["lon"]
@@ -192,12 +193,12 @@ def add_location():
                 )
                 locations_list.append(responses)
                 st.session_state.locations_list.append(responses)
-                with open("data/locations.json", "w") as file:
+                with open(LOCATIONS_FILE_PATH, "w") as file:
                     file.write(json.dumps(locations_list, indent=2))
                 city_select_droplist(city, state)
                 st.experimental_rerun()
             except requests.exceptions.HTTPError as e:
-                return f"Error: {str(e)}"
+                st.error(f"Error: {str(e)}")
 
 
 def drop_list():
@@ -226,4 +227,5 @@ def main(locations_list):
             break
 
     end_time = time.time()
-    st.markdown(f"Total time to run: {str(end_time - start_time)}")
+    # Measure the time it takes to process the selected location's weather
+    st.markdown(f"Total time to run: {str(round(end_time - start_time, 2))} seconds.")
