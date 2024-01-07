@@ -6,26 +6,28 @@ import json
 import os
 import time
 
+CSS_FILE_PATH = "css/styles.css"
+LOCATIONS_FILE_PATH = "data/locations.json"
+
 
 @st.cache_data
 def load_styles():
     """Load the custom css styles for the app"""
-    with open("css/styles.css") as f:
+    with open(CSS_FILE_PATH) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 def check_locations_file_exists():
     """Check if the locations file exists, if not create one"""
-    if not os.path.exists("data/locations.json"):
-        with open("data/locations.json", "w") as file:
+    if not os.path.exists(LOCATIONS_FILE_PATH):
+        with open(LOCATIONS_FILE_PATH, "w") as file:
             data = []
             json.dump(data, file)
 
 
-# @st.cache_data
 def get_locations_list():
     """Load the locations file for selecting the different weather locations"""
-    with open("data/locations.json", "r") as file:
+    with open(LOCATIONS_FILE_PATH, "r") as file:
         locations_list = json.load(file)
     return locations_list
 
@@ -57,7 +59,6 @@ def get_lon_lat(city, state, locations_list):
     return [lat, lon]
 
 
-# @st.cache_data
 def get_weather(city, state, locations_list):
     """Will return the weather forecast based on the City, State from the locations list. Will also display metrics and chart from the forecast."""
     weather_list = []
