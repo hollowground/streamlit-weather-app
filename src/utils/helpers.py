@@ -42,7 +42,7 @@ def city_selector():
             if f"{item['city']}, {item['state']}" not in results:
                 results.append(f"{item['city']}, {item['state']}")
             results.sort()
-
+        results.insert(2, "Remove location")
         return results
 
 
@@ -206,14 +206,63 @@ def drop_list():
     return st.selectbox("Select or Add Your City:", city_selector())
 
 
+def remove_location():
+    """Remove a City, State location from the locations list and update the session state."""
+    locations_list = get_locations_list()
+
+    # Display a sidebar to choose a location to remove
+    with st.sidebar:
+        st.header("Remove Location")
+        selected_location = st.selectbox(
+            "Select a location to remove:",
+            [""] + [f"{item['city']}, {item['state']}" for item in locations_list],
+        )
+
+    if selected_location:
+        city, state = selected_location.split(", ")
+        index_to_remove = None
+
+        # Find the index of the location to remove
+        for i, item in enumerate(locations_list):
+            if item["city"] == city and item["state"] == state:
+                index_to_remove = i
+                break
+
+        if index_to_remove is not None:
+            # Remove the location from the list
+            removed_location = locations_list.pop(index_to_remove)
+
+            # Update the session state
+            st.session_state.locations_list = locations_list
+
+            # Write the updated list to the locations file
+            with open(LOCATIONS_FILE_PATH, "w") as file:
+                file.write(json.dumps(locations_list, indent=2))
+
+            # Optionally, you can provide user feedback
+            st.success(
+                f"Location {removed_location['city']}, {removed_location['state']} removed successfully."
+            )
+
+            # Trigger a rerun to refresh the app
+            time.sleep(2)
+            st.experimental_rerun()
+        else:
+            st.warning(f"Selected location not found.")
+
+
 def main(locations_list):
-    """The main function to add new locations and return the weather based on the City, State selected."""
+    """The main function to add new locations, remove locations, and return the weather based on the City, State selected."""
     st.title("7 Day Weather Forecast :sunglasses:")
 
     start_time = time.time()
     response = drop_list()
+
     if response == "Add new location":
         add_location()
+    elif response == "Remove location":
+        # city, state = response.split(",", 1)
+        remove_location()
     else:
         while response not in ["Add new location", ""]:
             user_choice = response.split(",", 1)[0]
