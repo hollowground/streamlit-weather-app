@@ -196,7 +196,14 @@ def add_location():
                 with open(LOCATIONS_FILE_PATH, "w") as file:
                     file.write(json.dumps(locations_list, indent=2))
                 city_select_droplist(city, state)
-                st.experimental_rerun()
+
+                # Provide user feedback
+                st.success(f"Location {city}, {state} have been added successfully.")
+
+                # Trigger a rerun to refresh the app
+                time.sleep(2)
+                st.rerun()
+
             except requests.exceptions.HTTPError as e:
                 st.error(f"Error: {str(e)}")
 
@@ -239,14 +246,14 @@ def remove_location():
             with open(LOCATIONS_FILE_PATH, "w") as file:
                 file.write(json.dumps(locations_list, indent=2))
 
-            # Optionally, you can provide user feedback
+            # Provide user feedback
             st.success(
                 f"Location {removed_location['city']}, {removed_location['state']} removed successfully."
             )
 
             # Trigger a rerun to refresh the app
             time.sleep(2)
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.warning(f"Selected location not found.")
 
