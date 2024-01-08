@@ -285,3 +285,4 @@ def main(locations_list):
     end_time = time.time()
     # Measure the time it takes to process the selected location's weather
     st.markdown(f"Total time to run: {str(round(end_time - start_time, 2))} seconds.")
+    st.toast(f"Total time to run: {str(round(end_time - start_time, 2))} seconds.", icon="🚨")
