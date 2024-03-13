@@ -175,6 +175,10 @@ def add_location():
             "Enter in the two character state code:", "State Code ex. NY ..."
         )
         responses = {"city": city, "state": state}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/122.0.0.0",
+            "Accept": "application/json",
+        }
 
         geo_json = {}
         geo_coding_url = (
@@ -182,7 +186,9 @@ def add_location():
         )
         if add_location_button := st.form_submit_button(label="Add Location"):
             try:
-                geo_json = requests.get(geo_coding_url, timeout=REQUEST_TIMEOUT)
+                geo_json = requests.get(
+                    geo_coding_url, timeout=REQUEST_TIMEOUT, headers=headers
+                )
                 geo_json.raise_for_status()
                 geo_json = geo_json.json()
                 geo_lon_coordinate = geo_json[0]["lon"]
@@ -285,4 +291,6 @@ def main(locations_list):
     end_time = time.time()
     # Measure the time it takes to process the selected location's weather
     st.markdown(f"Total time to run: {str(round(end_time - start_time, 2))} seconds.")
-    st.toast(f"Total time to run: {str(round(end_time - start_time, 2))} seconds.", icon="🚨")
+    st.toast(
+        f"Total time to run: {str(round(end_time - start_time, 2))} seconds.", icon="🚨"
+    )
