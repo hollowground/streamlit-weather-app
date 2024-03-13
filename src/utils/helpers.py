@@ -9,6 +9,10 @@ import time
 CSS_FILE_PATH = "css/styles.css"
 LOCATIONS_FILE_PATH = "data/locations.json"
 REQUEST_TIMEOUT = 10
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/122.0.0.0",
+    "Accept": "application/json",
+}
 
 
 @st.cache_data
@@ -64,7 +68,9 @@ def fetch_weather_data(lat, lon):
     """Fetch weather data from the API based on latitude and longitude."""
     weather_gov_points_url = f"https://api.weather.gov/points/{lat},{lon}"
     try:
-        response = requests.get(weather_gov_points_url, timeout=REQUEST_TIMEOUT)
+        response = requests.get(
+            weather_gov_points_url, timeout=REQUEST_TIMEOUT, headers=HEADERS
+        )
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as e:
@@ -75,7 +81,7 @@ def fetch_weather_data(lat, lon):
 def fetch_forecast_data(forecast_url):
     """Fetch forecast data from the API."""
     try:
-        response = requests.get(forecast_url, timeout=REQUEST_TIMEOUT)
+        response = requests.get(forecast_url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         return response.json()["properties"]["periods"]
     except requests.exceptions.HTTPError as e:
@@ -175,11 +181,6 @@ def add_location():
             "Enter in the two character state code:", "State Code ex. NY ..."
         )
         responses = {"city": city, "state": state}
-        headers = {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/122.0.0.0",
-            "Accept": "application/json",
-        }
-
         geo_json = {}
         geo_coding_url = (
             f"https://nominatim.openstreetmap.org/search?q={city}%20{state}&format=json"
@@ -187,7 +188,7 @@ def add_location():
         if add_location_button := st.form_submit_button(label="Add Location"):
             try:
                 geo_json = requests.get(
-                    geo_coding_url, timeout=REQUEST_TIMEOUT, headers=headers
+                    geo_coding_url, timeout=REQUEST_TIMEOUT, headers=HEADERS
                 )
                 geo_json.raise_for_status()
                 geo_json = geo_json.json()
